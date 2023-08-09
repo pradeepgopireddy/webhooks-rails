@@ -50,30 +50,23 @@ This demo webhooks controller also includes an example of how to send a webhook 
     
     rails generate controller WebhooksController
 
+
     # app/controllers/webhooks_controller.rb
     class WebhooksController < ApplicationController
-        before_action :set_webhook, only: %i[ show update destroy ]
   
         # Disable CSRF checks on webhooks because they are not originated from browser
         skip_before_action :verify_authenticity_token, on: [:create]
-
-        # GET /webhooks
-        def index
-            @webhooks = Webhook.all
-        end
 
         # To send a sample webhook locally:
         #  curl -X POST http://localhost:3000/webhooks/github_pull_request 
         #       -H "Content-Type: application/json" 
         #       -d '{ "data": "Sample data", "status": "pending"}'
   
-        # POST /webhooks
+        # POST /webhooks/:source_name
         def create
             @webhook = Webhook.new()
             @webhook.source_name = params[:source_name]
-            @webhook.data = payload
             if @webhook.save
-            WebhookJob.perform_later(@webhook)
             render json: {status: :ok }, status: :ok
             else
             render json: {errors: @webhook.errors}, status: :unprocessable_entity
@@ -86,12 +79,10 @@ This demo webhooks controller also includes an example of how to send a webhook 
 
         # PATCH/PUT /webhooks/1
         def update
-            @webhook.data = payload
             if @webhook.save
-            WebhookJob.perform_later(@webhook)
-            render json: {status: :ok}, status: :ok
+                render json: {status: :ok}, status: :ok
             else
-            render json: {errors: @webhook.errors}, status: :unprocessable_entity
+                render json: {errors: @webhook.errors}, status: :unprocessable_entity
             end
         end
 
@@ -104,10 +95,6 @@ This demo webhooks controller also includes an example of how to send a webhook 
         # Only allow a list of trusted parameters through.
         def webhook_params
             params.permit(:data, :status)
-        end
-
-        def payload
-            @payload ||= request.body.read
         end
     end
 ## 1B) Adding Routes for the Webhook Controllers
@@ -126,6 +113,17 @@ We are going to set up routes to webhook controller. We will only allow the crea
         
         # your other routes here
     end
+
+## 1C) Testing our new routes
+We can test our new routes by sending a request to our new webhook routes. We can use curl to send a request to our new webhook routes.
+
+Let's run the server and send a request to our new webhook routes.
+
+This should be successful and return a 200 status code.
+    
+    curl -X POST 'http://localhost:3000/webhooks/github_request' -H 'Content-Type: application/json' -d '{"data":"Sample Data", "status": "pending"}'
+
+Now that we have our routes set up, we can move on to creating a webhook model.
 
 * Deployment instructions
 
