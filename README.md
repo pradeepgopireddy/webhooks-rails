@@ -47,7 +47,7 @@ Things you may want to cover:
 We'll start by creating a controller and an HTTP route to catch the webhook events.
 ## 1A) Creating a Webhooks Controller
 This demo webhooks controller also includes an example of how to send a webhook to your application. You can use this to test your webhook processor.
-    
+
     rails generate controller WebhooksController
 
 
@@ -66,10 +66,11 @@ This demo webhooks controller also includes an example of how to send a webhook 
         def create
             @webhook = Webhook.new()
             @webhook.source_name = params[:source_name]
+            @webhook.data = payload
             if @webhook.save
-            render json: {status: :ok }, status: :ok
+                render json: {status: :ok }, status: :ok
             else
-            render json: {errors: @webhook.errors}, status: :unprocessable_entity
+                render json: {errors: @webhook.errors}, status: :unprocessable_entity
             end
         end
 
@@ -79,6 +80,7 @@ This demo webhooks controller also includes an example of how to send a webhook 
 
         # PATCH/PUT /webhooks/1
         def update
+            @webhook.data = payload
             if @webhook.save
                 render json: {status: :ok}, status: :ok
             else
@@ -95,6 +97,10 @@ This demo webhooks controller also includes an example of how to send a webhook 
         # Only allow a list of trusted parameters through.
         def webhook_params
             params.permit(:data, :status)
+        end
+
+        def payload
+            @payload ||= request.body.read
         end
     end
 ## 1B) Adding Routes for the Webhook Controllers
@@ -124,6 +130,47 @@ This should be successful and return a 200 status code.
     curl -X POST 'http://localhost:3000/webhooks/github_request' -H 'Content-Type: application/json' -d '{"data":"Sample Data", "status": "pending"}'
 
 Now that we have our routes set up, we can move on to creating a webhook model.
+
+# Step 2: Creating a Webhook Model
+This model(webhook) will be responsible for storing the webhook until a background job can process it.
+
+The reason we want to do this is because we want our controller to respond as fast as possible for heavy traffic (like Amazon prime day sale for example) and we want to store the record in the database to safely store it for retries if the service is having trouble for any reason.
+
+## 2A) Creating the Webhook Model
+We can use the Rails generator to create our model.
+
+    rails generate model Webhook source_name:string data:jsonb status:string
+
+We should now have a model file with basic validations and a migration file.
+
+    # app/models/webhook.rb
+
+    class Webhook < ApplicationRecord
+
+        validates :source_name, presence: true
+        validates :data, presence: true
+    end
+
+
+    # db/migrate/20230809025933_create_webhooks.rb
+
+    class CreateWebhooks < ActiveRecord::Migration[5.0]
+        def change
+            create_table :webhooks do |t|
+            t.string :source_name
+            t.jsonb :data
+            t.string :status, default: :pending
+
+            t.timestamps
+            end
+        end
+    end
+
+Now we can run our migration to create the table in the database.
+
+    rails db:migrate
+
+Now that we have a model and a backing table in the database, we can save our webhook to the database.
 
 * Deployment instructions
 
