@@ -1,0 +1,18 @@
+<p id="notice"><%= notice %></p>
+
+<p>
+  <strong>Source name:</strong>
+  <%= @webhook.source_name %>
+</p>
+
+<p>
+  <strong>Data:</strong>
+  <%= @webhook.data %>
+</p>
+
+<p>
+  <strong>Status:</strong>
+  <%= @webhook.status %>
+</p>
+
+<%= link_to 'Back', webhooks_path %>
