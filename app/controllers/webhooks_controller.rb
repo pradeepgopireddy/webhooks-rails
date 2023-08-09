@@ -4,24 +4,23 @@ class WebhooksController < ApplicationController
   # Disable CSRF checks on webhooks because they are not originated from browser
   skip_before_action :verify_authenticity_token, on: [:create]
 
-  # GET /webhooks or /webhooks.json
+  # GET /webhooks
   def index
     @webhooks = Webhook.all
   end
 
-  # GET /webhooks/1 or /webhooks/1.json
+  # GET /webhooks/1
   def show
   end
 
   #  curl -X POST http://localhost:3000/webhooks/github_pull_request -H "Content-Type: application/json" -d '{ "data": "Sample data", "status": "pending"}'
   
-  # POST /webhooks or /webhooks.json
+  # POST /webhooks
   def create
     @webhook = Webhook.new()
     @webhook.source_name = params[:source_name]
     @webhook.data = payload
     if @webhook.save
-      # notify_third_party_endpoints
       WebhookJob.perform_later(@webhook)
       render json: {status: :ok }, status: :ok
     else
@@ -31,7 +30,7 @@ class WebhooksController < ApplicationController
 
   # curl -X PUT http://localhost:3000/webhooks/3 -H "Content-Type: application/json" -d '{"type": "customer.updated", "data": "Updated data", "status": "pending"}'
 
-  # PATCH/PUT /webhooks/1 or /webhooks/1.json
+  # PATCH/PUT /webhooks/1
   def update
     @webhook.data = payload
     if @webhook.save

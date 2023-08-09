@@ -46,8 +46,69 @@ Things you may want to cover:
 # Step 1: Setting Up a Controller and Rails Routes
 We'll start by creating a controller and an HTTP route to catch the webhook events.
 ## 1A) Creating a Webhooks Controller
-    This demo webhooks controller also includes an example of how to send a webhook to your application. You can use this to test your webhook processor.
-        rails generate controller WebhooksController
+This demo webhooks controller also includes an example of how to send a webhook to your application. You can use this to test your webhook processor.
+    rails generate controller WebhooksController
+
+    # app/controllers/webhooks_controller.rb
+    class WebhooksController < ApplicationController
+        before_action :set_webhook, only: %i[ show update destroy ]
+  
+        # Disable CSRF checks on webhooks because they are not originated from browser
+        skip_before_action :verify_authenticity_token, on: [:create]
+
+        # GET /webhooks
+        def index
+            @webhooks = Webhook.all
+        end
+
+        # To send a sample webhook locally:
+        #  curl -X POST http://localhost:3000/webhooks/github_pull_request 
+        #       -H "Content-Type: application/json" 
+        #       -d '{ "data": "Sample data", "status": "pending"}'
+  
+        # POST /webhooks
+        def create
+            @webhook = Webhook.new()
+            @webhook.source_name = params[:source_name]
+            @webhook.data = payload
+            if @webhook.save
+            WebhookJob.perform_later(@webhook)
+            render json: {status: :ok }, status: :ok
+            else
+            render json: {errors: @webhook.errors}, status: :unprocessable_entity
+            end
+        end
+
+        # curl -X PUT http://localhost:3000/webhooks/3 
+        #       -H "Content-Type: application/json" 
+        #       -d '{"type": "customer.updated", "data": "Updated data", "status": "pending"}'
+
+        # PATCH/PUT /webhooks/1
+        def update
+            @webhook.data = payload
+            if @webhook.save
+            WebhookJob.perform_later(@webhook)
+            render json: {status: :ok}, status: :ok
+            else
+            render json: {errors: @webhook.errors}, status: :unprocessable_entity
+            end
+        end
+
+        private
+        # Use callbacks to share common setup or constraints between actions.
+        def set_webhook
+            @webhook = Webhook.find(params[:id])
+        end
+
+        # Only allow a list of trusted parameters through.
+        def webhook_params
+            params.permit(:data, :status)
+        end
+
+        def payload
+            @payload ||= request.body.read
+        end
+    end
 
 * Deployment instructions
 
