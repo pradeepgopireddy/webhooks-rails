@@ -1,6 +1,9 @@
 class WebhookJob < ApplicationJob
   queue_as :default
 
+  # C:\Users\venug\Downloads
+  # "C:\Users\venug\Downloads\ngrok-v3-stable-linux-386.tgz"
+
   def perform(webhook)
     payload = JSON.parse(webhook.data, symbolize_names: true)
    
