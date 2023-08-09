@@ -45,8 +45,7 @@ Things you may want to cover:
 * Services (job queues, cache servers, search engines, etc.)
 # Step 1: Setting Up a Controller and Rails Routes
 We'll start by creating a controller and an HTTP route to catch the webhook events.
-# 1A) Creating a Webhooks Controller
-
+## 1A) Creating a Webhooks Controller
 This demo webhooks controller also includes an example of how to send a webhook to your application. You can use this to test your webhook processor.
     rails generate controller WebhooksController
 
