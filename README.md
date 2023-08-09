@@ -31,18 +31,6 @@ Things you may want to cover:
     RUBY: 2.6.1
     RAILS: 5.0.7.2
 
-* System dependencies
-
-
-* Configuration
-
-* Database creation
-
-* Database initialization
-
-* How to run the test suite
-
-* Services (job queues, cache servers, search engines, etc.)
 # Step 1: Setting Up a Controller and Rails Routes
 We'll start by creating a controller and an HTTP route to catch the webhook events.
 ## 1A) Creating a Webhooks Controller
@@ -50,6 +38,7 @@ This demo webhooks controller also includes an example of how to send a webhook 
 
     rails generate controller WebhooksController
 
+...
 
     # app/controllers/webhooks_controller.rb
     class WebhooksController < ApplicationController
@@ -151,6 +140,7 @@ We should now have a model file with basic validations and a migration file.
         validates :data, presence: true
     end
 
+....
 
     # db/migrate/20230809025933_create_webhooks.rb
 
@@ -184,7 +174,7 @@ Let's create a job for our webhook provider
 
     rails generate job WebhookJob
 
-
+....
 
     # app/jobs/webhook_job.rb
 
@@ -207,7 +197,7 @@ Let's create a job for our webhook provider
     end
 
 
-# 3B) Updating our Webhook Controllers to enqueue jobs
+## 3B) Updating our Webhook Controllers to enqueue jobs
 Now that we have our jobs defined, we need to enqueue them in our webhook controller.
 
 Let's update the webhooks controller to process these webhooks
@@ -253,6 +243,5 @@ Let's update the webhooks controller to process these webhooks
         end
     end
 
-* Deployment instructions
 
 * ...
