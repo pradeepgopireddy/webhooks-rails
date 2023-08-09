@@ -47,6 +47,7 @@ Things you may want to cover:
 We'll start by creating a controller and an HTTP route to catch the webhook events.
 ## 1A) Creating a Webhooks Controller
 This demo webhooks controller also includes an example of how to send a webhook to your application. You can use this to test your webhook processor.
+    
     rails generate controller WebhooksController
 
     # app/controllers/webhooks_controller.rb
@@ -108,6 +109,22 @@ This demo webhooks controller also includes an example of how to send a webhook 
         def payload
             @payload ||= request.body.read
         end
+    end
+## 1B) Adding Routes for the Webhook Controllers
+Finally, we need to add routes for these webhook controllers.
+
+We are going to set up routes to webhook controller. We will only allow the create/update action on these routes.
+
+    # config/routes.rb
+
+    Rails.application.routes.draw do
+        resources :webhooks, only: [:create, :update, :index, :show, :destroy]
+        # http://localhost:3000/webhooks/github_pull_request
+        # http://localhost:3000/webhooks/stripe_request
+        post '/webhooks/:source_name', to: 'webhooks#create'
+        root 'webhooks#index'
+        
+        # your other routes here
     end
 
 * Deployment instructions
