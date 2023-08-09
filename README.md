@@ -172,6 +172,87 @@ Now we can run our migration to create the table in the database.
 
 Now that we have a model and a backing table in the database, we can save our webhook to the database.
 
+# Step 3: Creating a Background Worker
+Now that we have a record in our database, we need to process it. We don't want to process it in the controller because that would slow down our response time. Instead, we want to process it in a background job.
+
+## 3A) Creating the Background Job
+Let's use another Rails generator to create a background job.
+
+In thise case, we are going to use the ActiveJob framework that comes with Rails. This will allow us to easily switch between background job providers like Sidekiq, Resque, DelayedJob, etc.
+
+Let's create a job for our webhook provider
+
+    rails generate job WebhookJob
+
+
+
+    # app/jobs/webhook_job.rb
+
+    class WebhookJob < ApplicationJob
+        queue_as :default
+
+        def perform(webhook)
+            payload = JSON.parse(webhook.data, symbolize_names: true)
+            
+            # create stripe event object from payload data
+            event = Stripe::Event.construct_from(payload)
+            case event.type
+            when 'customer.updated'
+                # handle updated customer event
+                webhook.update!(status: :processed)
+            else
+                webhook.update!(status: :skipped)
+            end
+        end
+    end
+
+
+# 3B) Updating our Webhook Controllers to enqueue jobs
+Now that we have our jobs defined, we need to enqueue them in our webhook controller.
+
+Let's update the webhooks controller to process these webhooks
+
+    # app/controllers/webhooks_controller.rb
+
+
+    class WebhooksController < ApplicationController
+  
+        # POST /webhooks/:source_name
+        def create
+            @webhook = Webhook.new()
+            @webhook.source_name = params[:source_name]
+            @webhook.data = payload
+            if @webhook.save
+                # Enqueue database record for processing
+                WebhookJob.perform_later(@webhook)
+                render json: {status: :ok }, status: :ok
+            else
+                render json: {errors: @webhook.errors}, status: :unprocessable_entity
+            end
+        end
+
+        # PATCH/PUT /webhooks/1
+        def update
+            @webhook.data = payload
+            if @webhook.save
+                WebhookJob.perform_later(@webhook)
+                render json: {status: :ok}, status: :ok
+            else
+                render json: {errors: @webhook.errors}, status: :unprocessable_entity
+            end
+        end
+
+        private
+       
+        def set_webhook
+            @webhook = Webhook.find(params[:id])
+        end
+
+        def payload
+            @payload ||= request.body.read
+        end
+    end
+
 * Deployment instructions
 
 * ...
