@@ -3,6 +3,7 @@ class WebhooksController < ApplicationController
   
   # Disable CSRF checks on webhooks because they are not originated from browser
   skip_before_action :verify_authenticity_token, on: [:create]
+  before_action :validate_webhook_authenticity
 
   # GET /webhooks
   def index
@@ -20,6 +21,7 @@ class WebhooksController < ApplicationController
     @webhook = Webhook.new()
     @webhook.source_name = params[:source_name]
     @webhook.data = payload
+    # Rails.application.credentials.web_hook[:secret_key]
     if @webhook.save
       WebhookJob.perform_later(@webhook)
       render json: {status: :ok }, status: :ok
@@ -64,6 +66,14 @@ class WebhooksController < ApplicationController
 
     def payload
       @payload ||= request.body.read
+    end
+
+    def validate_webhook_authenticity
+      provided_token = request.headers['X-Webhook-Token']
+      shared_token = ENV['WEBHOOK_SECRET_KEY']
+      # Rails.application.credentials.webhook_token # Store the token in Rails credentials
+  
+      head :unauthorized unless provided_token == shared_token
     end
 
     def notify_third_party_endpoints
