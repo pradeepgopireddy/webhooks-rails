@@ -29,7 +29,7 @@ Things you may want to cover:
 
 * Ruby version
     RUBY: 2.6.1
-    RAILS: 5.0.7.2
+    RAILS: 5.2.8.1
 
 # Step 1: Setting Up a Controller and Rails Routes
 We'll start by creating a controller and an HTTP route to catch the webhook events.

@@ -14,14 +14,13 @@ class WebhooksController < ApplicationController
   def show
   end
 
-  #  curl -X POST http://localhost:3000/webhooks/github_pull_request -H "Content-Type: application/json" -d '{ "data": "Sample data", "status": "pending"}'
-  
+  #  curl -X POST http://localhost:3000/webhooks/github_pull_request -H "Content-Type: application/json"  -H "X-Webhook-Token: YOUR_TOKEN" -d '{ "data": "Sample data", "status": "pending"}'
+
   # POST /webhooks
   def create
     @webhook = Webhook.new()
     @webhook.source_name = params[:source_name]
     @webhook.data = payload
-    # Rails.application.credentials.web_hook[:secret_key]
     if @webhook.save
       WebhookJob.perform_later(@webhook)
       render json: {status: :ok }, status: :ok
@@ -70,8 +69,7 @@ class WebhooksController < ApplicationController
 
     def validate_webhook_authenticity
       provided_token = request.headers['X-Webhook-Token']
-      shared_token = ENV['WEBHOOK_SECRET_KEY']
-      # Rails.application.credentials.webhook_token # Store the token in Rails credentials
+      shared_token = Rails.application.credentials.webhook_key # Store the token in Rails credentials 
   
       head :unauthorized unless provided_token == shared_token
     end
