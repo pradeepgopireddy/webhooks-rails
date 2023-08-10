@@ -3,7 +3,7 @@ class WebhooksController < ApplicationController
   
   # Disable CSRF checks on webhooks because they are not originated from browser
   skip_before_action :verify_authenticity_token, on: [:create]
-  before_action :validate_webhook_authenticity
+  before_action :validate_webhook_authenticity, on: [:create, :update]
 
   # GET /webhooks
   def index
